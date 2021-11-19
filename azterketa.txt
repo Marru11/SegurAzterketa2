@@ -1,0 +1,78 @@
+--------------------1.LAB-----------------------
+rsync -av carpeta marru@34.65.117.205:path
+
+rsync -av --link-dest=imanol@34.89.104.73:/home/imanol/sgs/ /home/imanol/Escritorio/sgs/ imanol@34.89.104.73:/home/imanol/sgs/
+
+
+
+--------------------2.LAB-----------------------
+
+Al instalar apache2 se instala también el módulo ssl para apache2, por lo que no es necesario instalar ningún paquete adicional. Tan solo debemos generar un certificado para el servidor y activar el módulo ssl.
+
+Generar el certificado
+Para que nuestro servidor pueda servir páginas seguras con el protocolo https, necesita un certificado. Dicho certificado permitirá que nuestro servidor utilizar cifrado asimétrico para intercambiar las claves de cifrado con los clientes, antes de iniciar una trasmisión segura de información. Inicialmente, el cliente deberá aceptar el certificado del servidor, ya que generaremos un certificado autofirmado. Si queremos evitarlo, deberíamos contratar un certificado a una entidad certificadora confiable.
+Para generar nuestro certificado autofirmado, ejecutaremos el comando:
+
+// Generar certificado autofirmado
+
+ $sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout mysitename.key -out mysitename.crt
+
+Durante la ejecución de comando nos preguntará algunas sencillas preguntas como el nombre del servidor, etc... y después se crearan dos archivos en la ruta en las que nos encontremos: mysitename.crt ( el certificado ) y mysitename.key ( la clave privada ). El siguiente paso será configurar un servidor virtual para que utilice dicho certificado.
+
+Crear servidor virtual seguro en apache2
+Primero crearemos una carpeta de nombre 'websegura' dentro de '/var/www'. 
+$sudo mkdir /var/www/websegura
+Dentro de esta carpeta crea un index.html dando un mensaje de bienvenida a una zona segura.
+Dicha carpeta será el raíz de documentos (DocumentRoot) de nuestro servidor virtual seguro, de modo que todo lo que coloquemos en dicha carpeta deba ser accedido vía 'https'. Eso lo indicaremos más adelante mediante el parámetro SSLRequireSSL. El protocolo https utiliza el puerto 443, por lo tanto, tendremos habilitar dicho puerto para que apache lo utilice. 
+Comprueba en el fichero ports.conf que el puerto 443 está habilidado si se habilita el módulo SSL. 
+
+Posteriormente debemos habilitar el módulo ssl del servidor apache:
+
+// Habilitar el módulo ssl
+$sudo a2enmod ssl
+
+Después debemos crear el servidor virtual en apache. Dicho servidor virtual dispondrá de una url de acceso diferente a la de nuestra web principal y será accesible mediante https, por tanto tendremos que habilitar SSL e indicar la ruta del archivo que contiene el certificado. Todo ello lo haremos creando un nuevo host virtual, tal y como sabemos, pero indicando en este caso la siguiente información en el fichero websegura de /etc/apache2/sites-availables. Para ello haremos una copia del fichero default-ssl:
+
+$sudo cp default-ssl.conf websegura.conf
+       
+Abrimos el archivo y editamos el correcto ServerAdmin email address y añadimos la linea ServerName . Indicamos la ruta correcta en DocumentRoot y en la directiva <Directory > 
+
+Buscamos las siguiente lineas más abajo e indicamos cómo se llama el certificado que hemos creado y el fichero con la clave privada:
+SSLCertificateFile       /etc/apache2/sites-available/mysitename.crt
+SSLCertificateKeyFile /etc/apache2/sites-available/mysitename.key
+
+Habilitamos websegura
+$sudo a2ensite websegura
+                            
+Finalmente reiniciamos el servidor apache:
+// Reinicio de apache
+$sudo /etc/init.d/apache2 restart
+
+Al acceder a nuestro sitio seguro nos saldrá una alerta de seguridad que nos indica que el certificado no está emitido por una Autoridad de Certificación en la que confiamos. Si aceptamos esta excepción podremos visualizar el contenido de nuestra web.
+
+------------------------3.LAB------------------------
+
+generar par de claves
+gpg --gen-key
+
+listar claves guardadas
+gpg --list-keys
+
+exportar una clave publica BINARIO
+gpg --output miclave.gpg --export markelmontejo@gmail.com
+
+exportar una clave publica ASCII
+gpg --armor --output miclave.gpg --export markelmontejo@gmail.com
+
+importar clave publica
+gpg --import julen.gpg
+
+para generar una firma digital
+gpg --output doc.sig --sign doc
+
+para verificar una firma
+gpg --output doc --decrypt doc.sig
+
+gpg --sign -e -a --recipient julen@gmail.com /home/imanol/Escritorio/L1-Backup.pdf
+
+
